@@ -1,0 +1,7 @@
+node_modules/
+dist/
+
+# Debug / temp files
+ast.json
+out.json
+debug.js

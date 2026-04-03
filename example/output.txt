@@ -1,0 +1,393 @@
+﻿=== 基础用法 ===
+{
+  "type": "document",
+  "children": [
+    {
+      "type": "heading",
+      "depth": 1,
+      "children": [
+        {
+          "type": "text",
+          "value": "Hello World"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "children": [
+        {
+          "type": "text",
+          "value": "This is "
+        },
+        {
+          "type": "strong",
+          "children": [
+            {
+              "type": "text",
+              "value": "bold"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "value": " and "
+        },
+        {
+          "type": "emphasis",
+          "children": [
+            {
+              "type": "text",
+              "value": "italic"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "value": "."
+        }
+      ]
+    }
+  ]
+}
+
+=== 解析 sample.md ===
+顶层节点数量: 28
+节点类型:
+  [0] yaml
+  [1] heading (h1)
+  [2] paragraph
+  [3] heading (h2)
+  [4] paragraph
+  [5] heading (h2)
+  [6] list
+  [7] heading (h2)
+  [8] paragraph
+  [9] code
+  [10] paragraph
+  [11] code
+  [12] heading (h2)
+  [13] blockquote
+  [14] heading (h2)
+  [15] paragraph
+  [16] list
+  [17] heading (h2)
+  [18] table
+  [19] heading (h2)
+  [20] thematicBreak
+  [21] thematicBreak
+  [22] thematicBreak
+  [23] heading (h2)
+  [24] htmlBlock
+  [25] paragraph
+  [26] heading (h1)
+  [27] heading (h2)
+
+=== AST 树形结构 ===
+yaml: "title: 测试 Markdown
+author: jinnn
+date: 2..."
+heading
+  text: "Markdown Parser 示例文档"
+paragraph
+  text: "这是一个用于测试 "
+  strong
+    text: "md-parser"
+  text: " 的综合文档，涵盖所有已支持的 Markdown 语法。"
+heading
+  text: "行内格式"
+paragraph
+  text: "这段文字包含 "
+  strong
+    text: "粗体"
+  text: "、"
+  emphasis
+    text: "斜体"
+  text: "、"
+  delete
+    text: "删除线"
+  text: "、以及 "
+  inlineCode: "行内代码"
+  text: "。"
+  break
+  text: "也支持 "
+  strong
+    text: "下划线粗体"
+  text: " 和 "
+  emphasis
+    text: "下划线斜体"
+  text: "。"
+heading
+  text: "链接与图片"
+list
+  listItem
+    paragraph
+      text: "行内链接："
+      link
+        text: "Google"
+  listItem
+    paragraph
+      text: "自动链接："
+      link
+        text: "https://github.com"
+  listItem
+    paragraph
+      text: "邮箱链接："
+      link
+        text: "user@example.com"
+  listItem
+    paragraph
+      text: "引用链接：[点击这里][ref-link]"
+  listItem
+    paragraph
+      text: "图片："
+      image
+heading
+  text: "代码块"
+paragraph
+  text: "围栏代码块（带语言标注）："
+code: "import { MarkdownParser } from 'md-parse..."
+paragraph
+  text: "缩进代码块："
+code: "const x = 1;
+const y = 2;
+console.log(x ..."
+heading
+  text: "引用"
+blockquote
+  paragraph
+    text: "这是一段引用。"
+    break
+    text: "引用可以包含 "
+    strong
+      text: "粗体"
+    text: " 和 "
+    link
+      text: "链接"
+    text: "。"
+  blockquote
+    paragraph
+      text: "引用也可以嵌套。"
+heading
+  text: "列表"
+paragraph
+  text: "无序列表："
+list
+  listItem
+    paragraph
+      text: "苹果"
+  listItem
+    paragraph
+      text: "香蕉"
+  listItem
+    paragraph
+      text: "橘子"
+    paragraph
+      text: "有序列表："
+  listItem
+    paragraph
+      text: "第一步：安装依赖"
+  listItem
+    paragraph
+      text: "第二步：编写代码"
+  listItem
+    paragraph
+      text: "第三步：运行测试"
+heading
+  text: "表格"
+table
+  tableRow
+    tableCell
+      text: "功能"
+    tableCell
+      text: "状态"
+    tableCell
+      text: "说明"
+  tableRow
+    tableCell
+      text: "ATX 标题"
+    tableCell
+      text: "✅"
+    tableCell
+      inlineCode: "# "
+      text: " 到 "
+      inlineCode: "###### "
+  tableRow
+    tableCell
+      text: "Setext 标题"
+    tableCell
+      text: "✅"
+    tableCell
+      inlineCode: "==="
+      text: " 和 "
+      inlineCode: "---"
+      text: " 下划线"
+  tableRow
+    tableCell
+      text: "围栏代码"
+    tableCell
+      text: "✅"
+    tableCell
+      text: "支持语言标注"
+  tableRow
+    tableCell
+      text: "缩进代码"
+    tableCell
+      text: "✅"
+    tableCell
+      text: "4 空格缩进"
+  tableRow
+    tableCell
+      text: "引用块"
+    tableCell
+      text: "✅"
+    tableCell
+      text: "支持嵌套"
+  tableRow
+    tableCell
+      text: "列表"
+    tableCell
+      text: "✅"
+    tableCell
+      text: "有序和无序"
+  tableRow
+    tableCell
+      text: "表格"
+    tableCell
+      text: "✅"
+    tableCell
+      text: "支持对齐"
+  tableRow
+    tableCell
+      text: "HTML"
+    tableCell
+      text: "✅"
+    tableCell
+      text: "块级和行内"
+heading
+  text: "分隔线"
+thematicBreak
+thematicBreak
+thematicBreak
+heading
+  text: "HTML 混排"
+htmlBlock: "<div class="custom-block">
+  <p>这是一段原生 H..."
+paragraph
+  text: "行内 HTML 也可以：这里有一个 "
+  htmlInline: "<strong>"
+  text: "HTML 粗体"
+  htmlInline: "</strong>"
+  text: " 标签。"
+heading
+  text: "Setext 一级标题"
+heading
+  text: "Setext 二级标题"
+
+=== 文档中的所有链接 (4 个) ===
+  "Google" -> https://www.google.com title="Google"
+  "https://github.com" -> https://github.com
+  "user@example.com" -> mailto:user@example.com
+  "链接" -> https://example.com
+
+=== 文档中的所有图片 (1 个) ===
+  alt="示例图片" src="https://via.placeholder.com/150" title="示例图片"
+
+=== 文档中的所有代码块 (2 个) ===
+  lang=typescript  "import { MarkdownParser } from 'md-parser';..."
+  lang=(none)  "const x = 1;..."
+
+=== 将 AST 渲染回 Markdown ===
+---
+title: 测试 Markdown
+author: jinnn
+date: 2026-04-03
+---
+
+# Markdown Parser 示例文档
+
+这是一个用于测试 **md-parser** 的综合文档，涵盖所有已支持的 Markdown 语法。
+
+## 行内格式
+
+这段文字包含 **粗体**、*斜体*、~~删除线~~、以及 `行内代码`。也支持 **下划线粗体** 和 *下划线斜体*。
+
+## 链接与图片
+
+- 行内链接：[Google](https://www.google.com "Google")
+- 自动链接：[https://github.com](https://github.com)
+- 邮箱链接：[user@example.com](mailto:user@example.com)
+- 引用链接：[点击这里][ref-link]
+- 图片：![示例图片](https://via.placeholder.com/150 "示例图片")
+
+## 代码块
+
+围栏代码块（带语言标注）：
+
+```typescript
+import { MarkdownParser } from 'md-parser';
+
+const parser = new MarkdownParser();
+const ast = parser.parse('# Hello World');
+console.log(JSON.stringify(ast, null, 2));
+```
+
+缩进代码块：
+
+```
+const x = 1;
+const y = 2;
+console.log(x + y);
+```
+
+## 引用
+
+> 这是一段引用。引用可以包含 **粗体** 和 [链接](https://example.com)。
+>
+> > 引用也可以嵌套。
+
+## 列表
+
+无序列表：
+
+- 苹果
+- 香蕉
+- 橘子
+  
+  有序列表：
+- 第一步：安装依赖
+- 第二步：编写代码
+- 第三步：运行测试
+
+## 表格
+
+| 功能 | 状态 | 说明 |
+| :--- | :---: | ---: |
+| ATX 标题 | ✅ | `# ` 到 `###### ` |
+| Setext 标题 | ✅ | `===` 和 `---` 下划线 |
+| 围栏代码 | ✅ | 支持语言标注 |
+| 缩进代码 | ✅ | 4 空格缩进 |
+| 引用块 | ✅ | 支持嵌套 |
+| 列表 | ✅ | 有序和无序 |
+| 表格 | ✅ | 支持对齐 |
+| HTML | ✅ | 块级和行内 |
+
+## 分隔线
+
+---
+
+---
+
+---
+
+## HTML 混排
+
+<div class="custom-block">
+  <p>这是一段原生 HTML，解析器会将它作为 <code>htmlBlock</code> 节点保留。</p>
+</div>
+
+行内 HTML 也可以：这里有一个 <strong>HTML 粗体</strong> 标签。
+
+# Setext 一级标题
+
+## Setext 二级标题
+
