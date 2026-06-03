@@ -11,10 +11,27 @@
     "build": "tsc",
     "test": "vitest run"
   },
-  "keywords": [],
-  "author": "",
+  "description": "A lightweight, highly extensible, and strictly typed CommonMark-compliant Markdown parser and renderer written in TypeScript. Optimized for programmatic AST analysis and LLM-driven cleaning.",
+  "keywords": [
+    "markdown",
+    "ast",
+    "parser",
+    "renderer",
+    "commonmark",
+    "typescript",
+    "llm",
+    "markdown-it"
+  ],
+  "author": "jinnyang",
   "license": "ISC",
-  "description": "",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jinnnyang/md2ast.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jinnnyang/md2ast/issues"
+  },
+  "homepage": "https://github.com/jinnnyang/md2ast#readme",
   "devDependencies": {
     "@types/node": "^25.5.0",
     "typescript": "^6.0.2",
