@@ -27,6 +27,9 @@ export class MarkdownParser {
    */
   public references: Map<string, { url: string; title?: string }> = new Map();
 
+  /** Collects warnings for malformed structures during parsing */
+  public warnings: string[] = [];
+
   /**
    * Initializes the parser and registers all fundamental CommonMark rules.
    */
@@ -36,6 +39,16 @@ export class MarkdownParser {
     this.inline = new Ruler<InlineState>();
 
     this.initRules();
+  }
+
+  /**
+   * Registers a plugin to extend parser functionality.
+   * @param pluginFn The plugin function.
+   * @param options Optional settings for the plugin.
+   */
+  public use(pluginFn: (parser: MarkdownParser, options?: any) => void, options?: any): this {
+    pluginFn(this, options);
+    return this;
   }
 
   /**
@@ -247,7 +260,9 @@ export class MarkdownParser {
       children: [{
         type: 'text',
         value: content
-      }]
+      }],
+      line_num: startLine,
+      char_num: state.getCharNum(startLine)
     });
     
     state.line = endLine;
@@ -274,7 +289,8 @@ export class MarkdownParser {
         if (node.children.length === 1) {
           const textNode = node.children[0] as Literal;
           if (textNode && textNode.type === 'text') {
-             const inlineState = new InlineState(textNode.value);
+             const baseOffset = (node as any).char_num || 0;
+             const inlineState = new InlineState(textNode.value, baseOffset);
              this.processInlineState(inlineState);
              node.children = inlineState.tokens;
           }
@@ -321,6 +337,7 @@ export class MarkdownParser {
    */
   public parse(src: string): Document {
     this.references.clear();
+    this.warnings = [];
     const state = new BlockState(src, this);
     for (const rule of this.core.getRules()) {
       rule.action(state);

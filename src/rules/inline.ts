@@ -7,7 +7,8 @@ export function emphasisRegex(state: InlineState): boolean {
   if (strongMatch) {
     state.tokens.push({
       type: 'strong',
-      children: [{ type: 'text', value: strongMatch[1] || '' }]
+      children: [{ type: 'text', value: strongMatch[1] || '' }],
+      char_num: state.getCharNum()
     });
     state.pos += strongMatch[0].length;
     return true;
@@ -17,7 +18,8 @@ export function emphasisRegex(state: InlineState): boolean {
   if (emMatch) {
     state.tokens.push({
       type: 'emphasis',
-      children: [{ type: 'text', value: emMatch[1] || '' }]
+      children: [{ type: 'text', value: emMatch[1] || '' }],
+      char_num: state.getCharNum()
     });
     state.pos += emMatch[0].length;
     return true;
@@ -30,7 +32,7 @@ export function inlineCode(state: InlineState): boolean {
   const tail = state.src.slice(state.pos);
   const codeMatch = tail.match(/^`([^`]+)`/);
   if (codeMatch) {
-    state.tokens.push({ type: 'inlineCode', value: codeMatch[1] || '' });
+    state.tokens.push({ type: 'inlineCode', value: codeMatch[1] || '', char_num: state.getCharNum() });
     state.pos += codeMatch[0].length;
     return true;
   }
@@ -44,7 +46,8 @@ export function link(state: InlineState): boolean {
     const token: any = {
       type: 'link',
       url: linkMatch[2] || '',
-      children: [{ type: 'text', value: linkMatch[1] || '' }]
+      children: [{ type: 'text', value: linkMatch[1] || '' }],
+      char_num: state.getCharNum()
     };
     if (linkMatch[3]) token.title = linkMatch[3];
     state.tokens.push(token);
@@ -61,7 +64,8 @@ export function image(state: InlineState): boolean {
     const token: any = {
       type: 'image',
       alt: imgMatch[1] || '',
-      url: imgMatch[2] || ''
+      url: imgMatch[2] || '',
+      char_num: state.getCharNum()
     };
     if (imgMatch[3]) token.title = imgMatch[3];
     state.tokens.push(token);
@@ -77,7 +81,8 @@ export function htmlInline(state: InlineState): boolean {
   if (tagMatch) {
     state.tokens.push({
       type: 'htmlInline',
-      value: tagMatch[0] || ''
+      value: tagMatch[0] || '',
+      char_num: state.getCharNum()
     });
     state.pos += tagMatch[0].length;
     return true;
@@ -93,7 +98,8 @@ export function emphasisUnderscore(state: InlineState): boolean {
   if (strongMatch) {
     state.tokens.push({
       type: 'strong',
-      children: [{ type: 'text', value: strongMatch[1] || '' }]
+      children: [{ type: 'text', value: strongMatch[1] || '' }],
+      char_num: state.getCharNum()
     });
     state.pos += strongMatch[0].length;
     return true;
@@ -103,7 +109,8 @@ export function emphasisUnderscore(state: InlineState): boolean {
   if (emMatch) {
     state.tokens.push({
       type: 'emphasis',
-      children: [{ type: 'text', value: emMatch[1] || '' }]
+      children: [{ type: 'text', value: emMatch[1] || '' }],
+      char_num: state.getCharNum()
     });
     state.pos += emMatch[0].length;
     return true;
@@ -119,7 +126,8 @@ export function strikethrough(state: InlineState): boolean {
   if (delMatch) {
     state.tokens.push({
       type: 'delete',
-      children: [{ type: 'text', value: delMatch[1] || '' }]
+      children: [{ type: 'text', value: delMatch[1] || '' }],
+      char_num: state.getCharNum()
     });
     state.pos += delMatch[0].length;
     return true;
@@ -138,7 +146,8 @@ export function autolink(state: InlineState): boolean {
     state.tokens.push({
       type: 'link',
       url,
-      children: [{ type: 'text', value: url }]
+      children: [{ type: 'text', value: url }],
+      char_num: state.getCharNum()
     });
     state.pos += uriMatch[0].length;
     return true;
@@ -151,7 +160,8 @@ export function autolink(state: InlineState): boolean {
     state.tokens.push({
       type: 'link',
       url: `mailto:${email}`,
-      children: [{ type: 'text', value: email }]
+      children: [{ type: 'text', value: email }],
+      char_num: state.getCharNum()
     });
     state.pos += emailMatch[0].length;
     return true;
@@ -166,7 +176,7 @@ export function hardBreak(state: InlineState): boolean {
   
   const match = tail.match(/^(?:  +|\\ *)\n/);
   if (match) {
-    state.tokens.push({ type: 'break' as any });
+    state.tokens.push({ type: 'break' as any, char_num: state.getCharNum() });
     state.pos += match[0].length;
     return true;
   }
@@ -177,7 +187,7 @@ export function hardBreak(state: InlineState): boolean {
 // Soft line break: single newline
 export function softBreak(state: InlineState): boolean {
   if (state.src[state.pos] === '\n') {
-    state.tokens.push({ type: 'break' as any });
+    state.tokens.push({ type: 'break' as any, char_num: state.getCharNum() });
     state.pos++;
     return true;
   }

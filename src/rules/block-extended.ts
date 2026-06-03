@@ -25,7 +25,9 @@ export function blockquote(state: BlockState): boolean {
 
   state.doc.children.push({
     type: 'blockquote',
-    children: innerAst.children
+    children: innerAst.children,
+    line_num: state.line,
+    char_num: state.getCharNum(state.line)
   });
   
   state.line = nextLine;
@@ -94,7 +96,9 @@ export function list(state: BlockState): boolean {
     items.push(currentItemLines.join('\n'));
   }
 
-  const listChildren = items.map(itemStr => {
+  const listChildren = items.map((itemStr, index) => {
+    // Note: line_num estimation for list items is complex without tracking each item's actual line.
+    // For simplicity we just use the list's starting line_num, or we can leave it to the list wrapper.
     const innerAst = state.md.parse(itemStr);
     return {
       type: 'listItem' as const,
@@ -107,7 +111,9 @@ export function list(state: BlockState): boolean {
     type: 'list',
     ordered: isOrdered,
     spread: false,
-    children: listChildren
+    children: listChildren,
+    line_num: state.line,
+    char_num: state.getCharNum(state.line)
   });
 
   state.line = nextLine;

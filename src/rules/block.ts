@@ -4,7 +4,7 @@ import type { CodeBlock } from '../ast.js';
 export function thematicBreak(state: BlockState): boolean {
   const line = state.getLine(state.line);
   if (/^ {0,3}(?:(?:-[ \t]*){3,}|(?:_[ \t]*){3,}|(?:\*[ \t]*){3,})$/.test(line)) {
-    state.doc.children.push({ type: 'thematicBreak' });
+    state.doc.children.push({ type: 'thematicBreak', line_num: state.line, char_num: state.getCharNum(state.line) });
     state.line++;
     return true;
   }
@@ -23,7 +23,9 @@ export function yamlFrontmatter(state: BlockState): boolean {
       const content = state.lines.slice(state.line + 1, endLine).join('\n');
       state.doc.children.push({
         type: 'yaml',
-        value: content
+        value: content,
+        line_num: state.line,
+        char_num: state.getCharNum(state.line)
       });
       state.line = endLine + 1;
       return true;
@@ -45,7 +47,9 @@ export function heading(state: BlockState): boolean {
   state.doc.children.push({
     type: 'heading',
     depth,
-    children: [{ type: 'text', value: content }]
+    children: [{ type: 'text', value: content }],
+    line_num: state.line,
+    char_num: state.getCharNum(state.line)
   });
 
   state.line++;
@@ -61,19 +65,27 @@ export function fencedCode(state: BlockState): boolean {
   const info = (match[2] || '').trim();
   let nextLine = state.line + 1;
   let content = '';
+  let closed = false;
 
   while (nextLine < state.lineMax) {
     const curLine = state.getLine(nextLine);
     if (curLine.trim().startsWith(marker)) {
+      closed = true;
       break;
     }
     content += curLine + '\n';
     nextLine++;
   }
 
+  if (!closed && state.md && Array.isArray(state.md.warnings)) {
+    state.md.warnings.push(`Unclosed fenced code block at line ${state.line}`);
+  }
+
   const codeNode: CodeBlock = {
     type: 'code',
-    value: content.slice(0, -1) // remove trailing newline
+    value: content.slice(0, -1), // remove trailing newline
+    line_num: state.line,
+    char_num: state.getCharNum(state.line)
   };
   if (info) {
     const parsedLang = info.split(/\s+/)[0];
@@ -97,18 +109,45 @@ export function htmlBlock(state: BlockState): boolean {
   let nextLine = state.line;
   let content = '';
   
+  // Basic type 1 detection for strict closing
+  const lowerLine = line.toLowerCase();
+  const isType1 = /^ {0,3}<(script|pre|style)(?:\s|>|$)/.exec(lowerLine);
+  let closingTag = '';
+  if (isType1) {
+    closingTag = `</${isType1[1]}>`;
+  }
+  
+  let closed = false;
   while (nextLine < state.lineMax) {
     const curLine = state.getLine(nextLine);
-    if (state.isEmpty(nextLine)) {
-      break;
+    
+    if (isType1) {
+      if (curLine.toLowerCase().includes(closingTag)) {
+        content += curLine + '\n';
+        nextLine++;
+        closed = true;
+        break;
+      }
+    } else {
+      if (state.isEmpty(nextLine)) {
+        closed = true;
+        break;
+      }
     }
+    
     content += curLine + '\n';
     nextLine++;
   }
   
+  if (isType1 && !closed && state.md && Array.isArray(state.md.warnings)) {
+    state.md.warnings.push(`Unclosed HTML block (<${isType1[1]}>) at line ${state.line}`);
+  }
+  
   state.doc.children.push({
     type: 'htmlBlock',
-    value: content.slice(0, -1)
+    value: content.slice(0, -1),
+    line_num: state.line,
+    char_num: state.getCharNum(state.line)
   });
   
   state.line = nextLine;
@@ -144,7 +183,9 @@ export function indentedCode(state: BlockState): boolean {
 
   state.doc.children.push({
     type: 'code',
-    value: content
+    value: content,
+    line_num: state.line,
+    char_num: state.getCharNum(state.line)
   });
 
   state.line = nextLine;
@@ -171,7 +212,9 @@ export function setextHeading(state: BlockState): boolean {
   state.doc.children.push({
     type: 'heading',
     depth: depth as 1 | 2,
-    children: [{ type: 'text', value: content }]
+    children: [{ type: 'text', value: content }],
+    line_num: state.line,
+    char_num: state.getCharNum(state.line)
   });
 
   state.line += 2;
@@ -206,11 +249,13 @@ export function table(state: BlockState): boolean {
     return null;
   });
   
-  const parseRow = (rowLine: string) => {
+  const parseRow = (rowLine: string, rowLineIndex: number) => {
     const raw = rowLine.replace(/^\||\|$/g, '');
     const cells = raw.split('|').map(c => c.trim());
     return {
       type: 'tableRow' as const,
+      line_num: rowLineIndex,
+      char_num: state.getCharNum(rowLineIndex),
       children: cells.map(cellText => ({
         type: 'tableCell' as const,
         children: [{ type: 'text' as const, value: cellText }]
@@ -218,20 +263,22 @@ export function table(state: BlockState): boolean {
     };
   };
   
-  const rows = [parseRow(headerLine)];
+  const rows = [parseRow(headerLine, state.line)];
   let nextLine = state.line + 2;
   
   while (nextLine < state.lineMax) {
     const curLine = state.getLine(nextLine);
     if (state.isEmpty(nextLine) || !curLine.includes('|')) break;
-    rows.push(parseRow(curLine));
+    rows.push(parseRow(curLine, nextLine));
     nextLine++;
   }
   
   state.doc.children.push({
     type: 'table',
     align,
-    children: rows
+    children: rows,
+    line_num: state.line,
+    char_num: state.getCharNum(state.line)
   });
   
   state.line = nextLine;

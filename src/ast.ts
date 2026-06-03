@@ -1,17 +1,13 @@
-export interface Point {
-  line: number;
-  column: number;
-  offset?: number;
-}
-
-export interface Position {
-  start: Point;
-  end: Point;
-}
-
+/**
+ * Base Node Interface for AST
+ */
 export interface Node {
+  /** The type of the AST node */
   type: string;
-  position?: Position;
+  /** The starting line number (0-indexed) of this node in the source document */
+  line_num?: number;
+  /** The starting absolute character offset (0-indexed) of this node in the source document */
+  char_num?: number;
 }
 
 export interface Parent extends Node {
