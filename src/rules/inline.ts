@@ -1,4 +1,5 @@
 import { InlineState } from '../state.js';
+import { findMatchingBracket } from '../utils.js';
 
 export function emphasisRegex(state: InlineState): boolean {
   const tail = state.src.slice(state.pos);
@@ -46,18 +47,7 @@ export function link(state: InlineState): boolean {
   }
 
   // Parse link text with nested square brackets
-  let bracketCount = 1;
-  let textEnd = -1;
-  for (let i = 1; i < tail.length; i++) {
-    if (tail[i] === '[') bracketCount++;
-    if (tail[i] === ']') {
-      bracketCount--;
-      if (bracketCount === 0) {
-        textEnd = i;
-        break;
-      }
-    }
-  }
+  const textEnd = findMatchingBracket(tail, 1, '[', ']');
   if (textEnd === -1) return false; // Unclosed bracket
 
   const text = tail.slice(1, textEnd);
@@ -68,20 +58,7 @@ export function link(state: InlineState): boolean {
   if (!openParenMatch) return false;
   
   let parenStart = textEnd + 1 + openParenMatch[0].length;
-  let parenCount = 1;
-  let parenEnd = -1;
-  
-  // Find matching closing paren accounting for nesting
-  for (let i = parenStart; i < tail.length; i++) {
-    if (tail[i] === '(') parenCount++;
-    if (tail[i] === ')') {
-      parenCount--;
-      if (parenCount === 0) {
-        parenEnd = i;
-        break;
-      }
-    }
-  }
+  const parenEnd = findMatchingBracket(tail, parenStart, '(', ')');
   if (parenEnd === -1) return false; // Unclosed paren
 
   const insideParen = tail.slice(parenStart, parenEnd).trim();
@@ -117,18 +94,7 @@ export function image(state: InlineState): boolean {
   }
 
   // Parse alt text with nested square brackets
-  let bracketCount = 1;
-  let textEnd = -1;
-  for (let i = 2; i < tail.length; i++) {
-    if (tail[i] === '[') bracketCount++;
-    if (tail[i] === ']') {
-      bracketCount--;
-      if (bracketCount === 0) {
-        textEnd = i;
-        break;
-      }
-    }
-  }
+  const textEnd = findMatchingBracket(tail, 2, '[', ']');
   if (textEnd === -1) return false; // Unclosed bracket
 
   const alt = tail.slice(2, textEnd);
@@ -139,20 +105,7 @@ export function image(state: InlineState): boolean {
   if (!openParenMatch) return false;
   
   let parenStart = textEnd + 1 + openParenMatch[0].length;
-  let parenCount = 1;
-  let parenEnd = -1;
-  
-  // Find matching closing paren accounting for nesting
-  for (let i = parenStart; i < tail.length; i++) {
-    if (tail[i] === '(') parenCount++;
-    if (tail[i] === ')') {
-      parenCount--;
-      if (parenCount === 0) {
-        parenEnd = i;
-        break;
-      }
-    }
-  }
+  const parenEnd = findMatchingBracket(tail, parenStart, '(', ')');
   if (parenEnd === -1) return false; // Unclosed paren
 
   const insideParen = tail.slice(parenStart, parenEnd).trim();

@@ -55,7 +55,9 @@ test('Parse image with nested parentheses', () => {
 
 test('Parse full reference with nested brackets', () => {
   const parser = new MarkdownParser();
-  const md = `[text [nested] here][ref-id]\n\n[ref-id]: https://example.com`;
+  const md = `[text [nested] here][ref-id]
+
+[ref-id]: https://example.com`;
   const ast = parser.parse(md);
   
   // @ts-ignore
@@ -68,11 +70,26 @@ test('Parse full reference with nested brackets', () => {
 
 test('Parse shortcut reference with nested brackets', () => {
   const parser = new MarkdownParser();
-  const md = `[text [nested] here]\n\n[text [nested] here]: https://example.com`;
+  const md = `[text [nested] here]
+
+[text [nested] here]: https://example.com`;
   const ast = parser.parse(md);
   
   // @ts-ignore
   expect(ast.children[0].children[0].type).toBe('link');
   // @ts-ignore
   expect(ast.children[0].children[0].url).toBe('https://example.com');
+});
+
+test('Parse deeply nested brackets', () => {
+  const parser = new MarkdownParser();
+  const md = `[text [nested [deep [extra]] brackets]](https://example.com/page(id=(123))/test)`;
+  const ast = parser.parse(md);
+  
+  // @ts-ignore
+  expect(ast.children[0].children[0].type).toBe('link');
+  // @ts-ignore
+  expect(ast.children[0].children[0].url).toBe('https://example.com/page(id=(123))/test');
+  // @ts-ignore
+  expect(ast.children[0].children[0].children[0].value).toBe('text [nested [deep [extra]] brackets]');
 });

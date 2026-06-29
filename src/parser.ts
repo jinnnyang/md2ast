@@ -7,6 +7,7 @@ import {
   htmlInline, image, link, inlineCode, emphasisRegex,
   emphasisUnderscore, strikethrough, autolink, hardBreak, softBreak
 } from './rules/inline.js';
+import { findMatchingBracket } from './utils.js';
 
 /**
  * The core Markdown Parser class. 
@@ -118,18 +119,7 @@ export class MarkdownParser {
       
       // Find the matching closing bracket for label with nesting support
       const offset = line.indexOf('[');
-      let bracketCount = 1;
-      let labelEnd = -1;
-      for (let j = offset + 1; j < line.length; j++) {
-        if (line[j] === '[') bracketCount++;
-        if (line[j] === ']') {
-          bracketCount--;
-          if (bracketCount === 0) {
-            labelEnd = j;
-            break;
-          }
-        }
-      }
+      const labelEnd = findMatchingBracket(line, offset + 1, '[', ']');
       
       if (labelEnd === -1) {
         newLines.push(line);
@@ -180,33 +170,11 @@ export class MarkdownParser {
     // Full reference: [text][id] with nested brackets support
     if (tail.startsWith('[')) {
       // Parse first bracket for text (supports nesting)
-      let bracketCount = 1;
-      let textEnd = -1;
-      for (let i = 1; i < tail.length; i++) {
-        if (tail[i] === '[') bracketCount++;
-        if (tail[i] === ']') {
-          bracketCount--;
-          if (bracketCount === 0) {
-            textEnd = i;
-            break;
-          }
-        }
-      }
+      const textEnd = findMatchingBracket(tail, 1, '[', ']');
       if (textEnd !== -1 && textEnd + 1 < tail.length && tail[textEnd + 1] === '[') {
         const text = tail.slice(1, textEnd);
         // Parse second bracket for id
-        bracketCount = 1;
-        let idEnd = -1;
-        for (let i = textEnd + 2; i < tail.length; i++) {
-          if (tail[i] === '[') bracketCount++;
-          if (tail[i] === ']') {
-            bracketCount--;
-            if (bracketCount === 0) {
-              idEnd = i;
-              break;
-            }
-          }
-        }
+        const idEnd = findMatchingBracket(tail, textEnd + 2, '[', ']');
         if (idEnd !== -1) {
           const id = tail.slice(textEnd + 2, idEnd);
           const label = (id || text).toLowerCase().trim();
