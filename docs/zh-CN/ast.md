@@ -72,6 +72,15 @@ export interface Literal extends Node {
 | `image` | `Image` | `url: string`<br>`title?: string`<br>`alt?: string` | 行内图片节点。 |
 | `htmlInline` | `HtmlInline` | `value: string` | 行内原始 HTML 标签字符串。 |
 
+### 链接与图片解析特性
+
+`md2ast` 采用了鲁棒的扫描器（`findMatchingBracket`）来确定链接和图片的匹配边界，而不是使用简单的正则表达式。这使得解析器支持以下高级特性：
+* **URL 中的嵌套圆括号**: 能够正确解析 URL 中包含嵌套括号的链接，如 `[Wikipedia](https://en.wikipedia.org/wiki/Markdown_(markup_language))`。
+* **链接文本中的嵌套中括号**: 能够正确处理链接文本区域内的嵌套中括号，如 `[text with [nested] brackets](https://example.com)`。
+* **反斜杠转义**: 在寻找括号边界时能够正确识别并跳过反斜杠转义的括号（如 `\]` 或 `\[`），使得 `[link\]](url)` 能够成功解析为文本内容为 `link\]` 的链接。
+* **引号感知型标题处理**: 在匹配外部圆括号时，自动忽略被单引号或双引号包围的链接标题中的未成对括号（例如 `[link](url "title (unmatched")`）。
+* **空格限制**: 严格遵循 CommonMark 规范，不允许在中括号 `]` 和圆括号 `(` 之间存在空格（例如 `[link] (url)` 会被解析为纯文本，而不是链接）。
+
 ---
 
 ## 位置追踪与差值计算 (`line_num`, `char_num`)

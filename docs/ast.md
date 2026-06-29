@@ -72,6 +72,15 @@ export interface Literal extends Node {
 | `image` | `Image` | `url: string`<br>`title?: string`<br>`alt?: string` | Inline image node. |
 | `htmlInline` | `HtmlInline` | `value: string` | Raw inline HTML tag string. |
 
+### Link & Image Parsing Features
+
+`md2ast` employs a robust scanner (`findMatchingBracket`) for matching link/image boundaries rather than naive regexes. This enables several advanced parsing features:
+* **Nested Parentheses in URLs**: Successfully parses links with nested parentheses inside the destination URL, e.g. `[Wikipedia](https://en.wikipedia.org/wiki/Markdown_(markup_language))`.
+* **Nested Square Brackets in Link Text**: Handles nested square brackets within the link text block correctly, e.g. `[text with [nested] brackets](https://example.com)`.
+* **Backslash Escaped Brackets**: Correctly ignores backslash-escaped brackets (like `\]` or `\[`) when calculating matching brackets, allowing strings like `[link\]](url)` to parse as links with text `link\]`.
+* **Quote-Aware Title Processing**: Avoids being tripped up by unmatched parentheses inside single or double-quoted link titles (e.g. `[link](url "title (unmatched")`).
+* **Space Constraints**: Strictly enforces that no whitespace is allowed between the closing text bracket `]` and opening URL parenthesis `(` (e.g. `[link] (url)` is parsed as plain text in compliance with CommonMark).
+
 ---
 
 ## Positional Tracking (`line_num`, `char_num`)
