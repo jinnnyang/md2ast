@@ -54,7 +54,7 @@ export function link(state: InlineState): boolean {
   
   // Check for opening paren after closing bracket
   const afterText = tail.slice(textEnd + 1);
-  const openParenMatch = afterText.match(/^\s*\(\s*/);
+  const openParenMatch = afterText.match(/^\(\s*/);
   if (!openParenMatch) return false;
   
   let parenStart = textEnd + 1 + openParenMatch[0].length;
@@ -101,7 +101,7 @@ export function image(state: InlineState): boolean {
   
   // Check for opening paren after closing bracket
   const afterText = tail.slice(textEnd + 1);
-  const openParenMatch = afterText.match(/^\s*\(\s*/);
+  const openParenMatch = afterText.match(/^\(\s*/);
   if (!openParenMatch) return false;
   
   let parenStart = textEnd + 1 + openParenMatch[0].length;

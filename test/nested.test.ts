@@ -93,3 +93,39 @@ test('Parse deeply nested brackets', () => {
   // @ts-ignore
   expect(ast.children[0].children[0].children[0].value).toBe('text [nested [deep [extra]] brackets]');
 });
+
+test('Parse link with backslash-escaped brackets', () => {
+  const parser = new MarkdownParser();
+  const md = `[link\\]](https://example.com)`;
+  const ast = parser.parse(md);
+
+  // @ts-ignore
+  expect(ast.children[0].children[0].type).toBe('link');
+  // @ts-ignore
+  expect(ast.children[0].children[0].url).toBe('https://example.com');
+  // @ts-ignore
+  expect(ast.children[0].children[0].children[0].value).toBe('link\\]');
+});
+
+test('Do not parse link with space between closing bracket and opening parenthesis', () => {
+  const parser = new MarkdownParser();
+  const md = `[link] (https://example.com)`;
+  const ast = parser.parse(md);
+
+  // Should be parsed as plain text (since there's no defined reference for 'link')
+  // @ts-ignore
+  expect(ast.children[0].children[0].type).toBe('text');
+});
+
+test('Parse link with unmatched parenthesis inside double-quoted title', () => {
+  const parser = new MarkdownParser();
+  const md = `[link](https://example.com "My (Title")`;
+  const ast = parser.parse(md);
+
+  // @ts-ignore
+  expect(ast.children[0].children[0].type).toBe('link');
+  // @ts-ignore
+  expect(ast.children[0].children[0].url).toBe('https://example.com');
+  // @ts-ignore
+  expect(ast.children[0].children[0].title).toBe('My (Title');
+});

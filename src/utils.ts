@@ -15,11 +15,34 @@ export function findMatchingBracket(
   closeBracket: ']' | ')'
 ): number {
   let count = 1;
+  let inDoubleQuote = false;
+  let inSingleQuote = false;
+
   for (let i = startPos; i < text.length; i++) {
-    if (text[i] === openBracket) {
+    const char = text[i];
+    if (char === '\\') {
+      i++; // Skip the next character as it's escaped
+      continue;
+    }
+
+    if (openBracket === '(') {
+      if (char === '"' && !inSingleQuote) {
+        inDoubleQuote = !inDoubleQuote;
+        continue;
+      }
+      if (char === "'" && !inDoubleQuote) {
+        inSingleQuote = !inSingleQuote;
+        continue;
+      }
+      if (inDoubleQuote || inSingleQuote) {
+        continue; // Ignore brackets inside quotes
+      }
+    }
+
+    if (char === openBracket) {
       count++;
     }
-    if (text[i] === closeBracket) {
+    if (char === closeBracket) {
       count--;
       if (count === 0) {
         return i;
