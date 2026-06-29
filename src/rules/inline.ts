@@ -41,38 +41,144 @@ export function inlineCode(state: InlineState): boolean {
 
 export function link(state: InlineState): boolean {
   const tail = state.src.slice(state.pos);
-  const linkMatch = tail.match(/^\[(.*?)\]\(\s*([^ \t)]+)(?:\s+"(.*?)")?\s*\)/);
-  if (linkMatch) {
-    const token: any = {
-      type: 'link',
-      url: linkMatch[2] || '',
-      children: [{ type: 'text', value: linkMatch[1] || '' }],
-      char_num: state.getCharNum()
-    };
-    if (linkMatch[3]) token.title = linkMatch[3];
-    state.tokens.push(token);
-    state.pos += linkMatch[0].length;
-    return true;
+  if (!tail.startsWith('[')) {
+    return false;
   }
-  return false;
+
+  // Parse link text with nested square brackets
+  let bracketCount = 1;
+  let textEnd = -1;
+  for (let i = 1; i < tail.length; i++) {
+    if (tail[i] === '[') bracketCount++;
+    if (tail[i] === ']') {
+      bracketCount--;
+      if (bracketCount === 0) {
+        textEnd = i;
+        break;
+      }
+    }
+  }
+  if (textEnd === -1) return false; // Unclosed bracket
+
+  const text = tail.slice(1, textEnd);
+  
+  // Check for opening paren after closing bracket
+  const afterText = tail.slice(textEnd + 1);
+  const openParenMatch = afterText.match(/^\s*\(\s*/);
+  if (!openParenMatch) return false;
+  
+  let parenStart = textEnd + 1 + openParenMatch[0].length;
+  let parenCount = 1;
+  let parenEnd = -1;
+  
+  // Find matching closing paren accounting for nesting
+  for (let i = parenStart; i < tail.length; i++) {
+    if (tail[i] === '(') parenCount++;
+    if (tail[i] === ')') {
+      parenCount--;
+      if (parenCount === 0) {
+        parenEnd = i;
+        break;
+      }
+    }
+  }
+  if (parenEnd === -1) return false; // Unclosed paren
+
+  const insideParen = tail.slice(parenStart, parenEnd).trim();
+  let url: string;
+  let title: string | undefined;
+
+  // Split into url and title (title can be in quotes or parens)
+  const titleMatch = insideParen.match(/^(.*?)\s+(?:"([^"]*)"|\(([^)]*)\)|'([^']*)')\s*$/);
+  if (titleMatch) {
+    url = (titleMatch[1] || '').trim();
+    title = titleMatch[2] || titleMatch[3] || titleMatch[4];
+  } else {
+    url = insideParen;
+    title = undefined;
+  }
+
+  const token: any = {
+    type: 'link',
+    url,
+    children: [{ type: 'text', value: text }],
+    char_num: state.getCharNum()
+  };
+  if (title) token.title = title;
+  state.tokens.push(token);
+  state.pos += parenEnd + 1;
+  return true;
 }
 
 export function image(state: InlineState): boolean {
   const tail = state.src.slice(state.pos);
-  const imgMatch = tail.match(/^!\[(.*?)\]\(\s*([^ \t)]+)(?:\s+"(.*?)")?\s*\)/);
-  if (imgMatch) {
-    const token: any = {
-      type: 'image',
-      alt: imgMatch[1] || '',
-      url: imgMatch[2] || '',
-      char_num: state.getCharNum()
-    };
-    if (imgMatch[3]) token.title = imgMatch[3];
-    state.tokens.push(token);
-    state.pos += imgMatch[0].length;
-    return true;
+  if (!tail.startsWith('![')) {
+    return false;
   }
-  return false;
+
+  // Parse alt text with nested square brackets
+  let bracketCount = 1;
+  let textEnd = -1;
+  for (let i = 2; i < tail.length; i++) {
+    if (tail[i] === '[') bracketCount++;
+    if (tail[i] === ']') {
+      bracketCount--;
+      if (bracketCount === 0) {
+        textEnd = i;
+        break;
+      }
+    }
+  }
+  if (textEnd === -1) return false; // Unclosed bracket
+
+  const alt = tail.slice(2, textEnd);
+  
+  // Check for opening paren after closing bracket
+  const afterText = tail.slice(textEnd + 1);
+  const openParenMatch = afterText.match(/^\s*\(\s*/);
+  if (!openParenMatch) return false;
+  
+  let parenStart = textEnd + 1 + openParenMatch[0].length;
+  let parenCount = 1;
+  let parenEnd = -1;
+  
+  // Find matching closing paren accounting for nesting
+  for (let i = parenStart; i < tail.length; i++) {
+    if (tail[i] === '(') parenCount++;
+    if (tail[i] === ')') {
+      parenCount--;
+      if (parenCount === 0) {
+        parenEnd = i;
+        break;
+      }
+    }
+  }
+  if (parenEnd === -1) return false; // Unclosed paren
+
+  const insideParen = tail.slice(parenStart, parenEnd).trim();
+  let url: string;
+  let title: string | undefined;
+
+  // Split into url and title (title can be in quotes or parens)
+  const titleMatch = insideParen.match(/^(.*?)\s+(?:"([^"]*)"|\(([^)]*)\)|'([^']*)')\s*$/);
+  if (titleMatch) {
+    url = (titleMatch[1] || '').trim();
+    title = titleMatch[2] || titleMatch[3] || titleMatch[4];
+  } else {
+    url = insideParen;
+    title = undefined;
+  }
+
+  const token: any = {
+    type: 'image',
+    alt,
+    url,
+    char_num: state.getCharNum()
+  };
+  if (title) token.title = title;
+  state.tokens.push(token);
+  state.pos += parenEnd + 1;
+  return true;
 }
 
 export function htmlInline(state: InlineState): boolean {

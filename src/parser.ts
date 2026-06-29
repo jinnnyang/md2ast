@@ -104,21 +104,58 @@ export class MarkdownParser {
    * Scans lines for `[label]: url "optional title"` and caches them in `.references`.
    */
   private extractReferences(state: BlockState): boolean {
-    const REF_RE = /^ {0,3}\[([^\]]+)\]:\s+<?([^\s>]+)>?(?:\s+(?:"([^"]*)"|\(([^)]*)\)|'([^']*)'))?$/;
     const newLines: string[] = [];
 
     for (let i = 0; i < state.lineMax; i++) {
-      const line = state.getLine(i);
-      const match = line.match(REF_RE);
-      if (match) {
-        const label = (match[1] || '').toLowerCase().trim();
-        const url = match[2] || '';
-        const title = match[3] || match[4] || match[5];
+      let line = state.getLine(i);
+      const trimmedLine = line.trimLeft();
+      
+      // Check starts with [
+      if (!trimmedLine.startsWith('[')) {
+        newLines.push(line);
+        continue;
+      }
+      
+      // Find the matching closing bracket for label with nesting support
+      const offset = line.indexOf('[');
+      let bracketCount = 1;
+      let labelEnd = -1;
+      for (let j = offset + 1; j < line.length; j++) {
+        if (line[j] === '[') bracketCount++;
+        if (line[j] === ']') {
+          bracketCount--;
+          if (bracketCount === 0) {
+            labelEnd = j;
+            break;
+          }
+        }
+      }
+      
+      if (labelEnd === -1) {
+        newLines.push(line);
+        continue;
+      }
+      
+      const labelStr = line.slice(offset + 1, labelEnd);
+      const afterLabel = line.slice(labelEnd + 1);
+      
+      // Check for : after label
+      const colonMatch = afterLabel.match(/^\s*:\s*/);
+      if (!colonMatch) {
+        newLines.push(line);
+        continue;
+      }
+      
+      const urlAndTitlePart = afterLabel.slice(colonMatch[0].length);
+      // Parse url and title using regex similar to before but on the remaining part
+      const refMatch = urlAndTitlePart.match(/^<?([^\s>]+)>?(?:\s+(?:"([^"]*)"|\(([^)]*)\)|'([^']*)'))?$/);
+      if (refMatch) {
+        const label = labelStr.toLowerCase().trim();
+        const url = refMatch[1] || '';
+        const title = refMatch[2] || refMatch[3] || refMatch[4];
         if (label) {
           const ref: { url: string; title?: string } = { url };
-          if (title) {
-            ref.title = title;
-          }
+          if (title) ref.title = title;
           this.references.set(label, ref);
         }
         // Don't add this line to output
@@ -140,60 +177,93 @@ export class MarkdownParser {
   private referenceLink(state: InlineState): boolean {
     const tail = state.src.slice(state.pos);
     
-    // Full reference: [text][id]
-    const fullMatch = tail.match(/^\[([^\]]*)\]\[([^\]]*)\]/);
-    if (fullMatch) {
-      const text = fullMatch[1] || '';
-      const label = (fullMatch[2] || text).toLowerCase().trim();
-      const ref = this.references.get(label);
-      if (ref) {
-        const linkNode: any = {
-          type: 'link',
-          url: ref.url,
-          children: [{ type: 'text', value: text }]
-        };
-        if (ref.title) linkNode.title = ref.title;
-        state.tokens.push(linkNode);
-        state.pos += fullMatch[0].length;
-        return true;
+    // Full reference: [text][id] with nested brackets support
+    if (tail.startsWith('[')) {
+      // Parse first bracket for text (supports nesting)
+      let bracketCount = 1;
+      let textEnd = -1;
+      for (let i = 1; i < tail.length; i++) {
+        if (tail[i] === '[') bracketCount++;
+        if (tail[i] === ']') {
+          bracketCount--;
+          if (bracketCount === 0) {
+            textEnd = i;
+            break;
+          }
+        }
       }
-    }
-    
-    // Collapsed reference: [text][]
-    const collapsedMatch = tail.match(/^\[([^\]]+)\]\[\]/);
-    if (collapsedMatch) {
-      const text = collapsedMatch[1] || '';
-      const label = text.toLowerCase().trim();
-      const ref = this.references.get(label);
-      if (ref) {
-        const linkNode: any = {
-          type: 'link',
-          url: ref.url,
-          children: [{ type: 'text', value: text }]
-        };
-        if (ref.title) linkNode.title = ref.title;
-        state.tokens.push(linkNode);
-        state.pos += collapsedMatch[0].length;
-        return true;
+      if (textEnd !== -1 && textEnd + 1 < tail.length && tail[textEnd + 1] === '[') {
+        const text = tail.slice(1, textEnd);
+        // Parse second bracket for id
+        bracketCount = 1;
+        let idEnd = -1;
+        for (let i = textEnd + 2; i < tail.length; i++) {
+          if (tail[i] === '[') bracketCount++;
+          if (tail[i] === ']') {
+            bracketCount--;
+            if (bracketCount === 0) {
+              idEnd = i;
+              break;
+            }
+          }
+        }
+        if (idEnd !== -1) {
+          const id = tail.slice(textEnd + 2, idEnd);
+          const label = (id || text).toLowerCase().trim();
+          const ref = this.references.get(label);
+          if (ref) {
+            const linkNode: any = {
+              type: 'link',
+              url: ref.url,
+              children: [{ type: 'text', value: text }]
+            };
+            if (ref.title) linkNode.title = ref.title;
+            state.tokens.push(linkNode);
+            state.pos += idEnd + 1;
+            return true;
+          }
+        }
       }
-    }
-
-    // Shortcut reference: [text] (no second brackets)
-    const shortcutMatch = tail.match(/^\[([^\]]+)\](?!\[|\()/);
-    if (shortcutMatch) {
-      const text = shortcutMatch[1] || '';
-      const label = text.toLowerCase().trim();
-      const ref = this.references.get(label);
-      if (ref) {
-        const linkNode: any = {
-          type: 'link',
-          url: ref.url,
-          children: [{ type: 'text', value: text }]
-        };
-        if (ref.title) linkNode.title = ref.title;
-        state.tokens.push(linkNode);
-        state.pos += shortcutMatch[0].length;
-        return true;
+      
+      // Collapsed reference: [text][] with nested brackets support
+      if (textEnd !== -1 && textEnd + 1 < tail.length && tail[textEnd + 1] === '[' && tail[textEnd + 2] === ']') {
+        const text = tail.slice(1, textEnd);
+        const label = text.toLowerCase().trim();
+        const ref = this.references.get(label);
+        if (ref) {
+          const linkNode: any = {
+            type: 'link',
+            url: ref.url,
+            children: [{ type: 'text', value: text }]
+          };
+          if (ref.title) linkNode.title = ref.title;
+          state.tokens.push(linkNode);
+          state.pos += textEnd + 3;
+          return true;
+        }
+      }
+      
+      // Shortcut reference: [text] (no second brackets) with nested brackets support
+      if (textEnd !== -1 && textEnd + 1 <= tail.length) {
+        // Check if after closing bracket there is no [ or (
+        const nextChar = textEnd + 1 < tail.length ? tail[textEnd + 1] : '';
+        const isShortcut = !nextChar || (nextChar !== '[' && nextChar !== '(');
+        if (isShortcut) {
+          const text = tail.slice(1, textEnd);
+          const label = text.toLowerCase().trim();
+          const ref = this.references.get(label);
+          if (ref) {
+            const linkNode: any = {
+              type: 'link',
+              url: ref.url,
+              children: [{ type: 'text', value: text }]
+            };
+            if (ref.title) linkNode.title = ref.title;
+            state.tokens.push(linkNode);
+            state.pos += textEnd + 1;
+            return true;
+          }
+        }
       }
     }
 
